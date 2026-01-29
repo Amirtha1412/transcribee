@@ -69,6 +69,7 @@ cp .env.example .env
 
 # Transcribe anything
 transcribee "https://youtube.com/watch?v=..."
+transcribee "https://instagram.com/reel/..."
 transcribee ~/Downloads/podcast.mp3
 transcribee ~/Videos/interview.mp4
 ```
@@ -115,7 +116,7 @@ Each transcript saves to `~/Documents/transcripts/{category}/{title}/`:
 |------|---------|
 | Audio | mp3, m4a, wav, ogg, flac |
 | Video | mp4, mkv, webm, mov, avi |
-| URLs | youtube.com, youtu.be |
+| URLs | youtube.com, youtu.be, instagram.com/reel |
 
 ---
 

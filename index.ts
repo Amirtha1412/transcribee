@@ -99,6 +99,20 @@ function isUrl(input: string): boolean {
 }
 
 /**
+ * Check if URL is a YouTube video
+ */
+function isYouTubeUrl(url: string): boolean {
+    return url.includes('youtube.com') || url.includes('youtu.be');
+}
+
+/**
+ * Check if URL is an Instagram Reel
+ */
+function isInstagramUrl(url: string): boolean {
+    return url.includes('instagram.com/reel') || url.includes('instagram.com/p/');
+}
+
+/**
  * Check if file is a video that needs audio extraction
  */
 function isVideoFile(filePath: string): boolean {
@@ -364,15 +378,20 @@ Respond with a JSON object (no markdown code blocks):
 
 
 /**
- * Get video title from YouTube URL using yt-dlp
+ * Get video title from URL using yt-dlp (works for YouTube, Instagram, etc.)
  */
 async function getVideoTitle(url: string): Promise<string> {
     try {
-        const { stdout } = await execFileAsync('yt-dlp', [
-            '--get-title',
-            '--extractor-args', 'youtube:player_client=android,web',
-            url,
-        ]);
+        const args = ['--get-title'];
+
+        // Add YouTube-specific options only for YouTube URLs
+        if (isYouTubeUrl(url)) {
+            args.push('--extractor-args', 'youtube:player_client=android,web');
+        }
+
+        args.push(url);
+
+        const { stdout } = await execFileAsync('yt-dlp', args);
         // Sanitize title for use in file paths
         return stdout
             .trim()
@@ -387,19 +406,25 @@ async function getVideoTitle(url: string): Promise<string> {
 }
 
 async function downloadAudio(url: string, dest: string) {
-    // Use yt-dlp for more reliable YouTube downloads
+    // Use yt-dlp for reliable video downloads from YouTube, Instagram, etc.
     // Install with: brew install yt-dlp (macOS) or pip install yt-dlp
     try {
-        await execFileAsync('yt-dlp', [
+        const args = [
             '--extract-audio',
             '--audio-format', 'm4a',
             '--audio-quality', '0', // best quality
             '--output', dest,
-            // Add options to help bypass YouTube restrictions
-            '--extractor-args', 'youtube:player_client=android,web',
             '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            url,
-        ]);
+        ];
+
+        // Add YouTube-specific options only for YouTube URLs
+        if (isYouTubeUrl(url)) {
+            args.push('--extractor-args', 'youtube:player_client=android,web');
+        }
+
+        args.push(url);
+
+        await execFileAsync('yt-dlp', args);
     } catch (error: any) {
         if (error.code === 'ENOENT') {
             throw new Error(
