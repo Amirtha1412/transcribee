@@ -75,6 +75,25 @@ interface TranscriptMetadata {
     wordsDetected?: number;
 }
 
+/**
+ * Rich source metadata from yt-dlp or local file analysis
+ */
+interface SourceMetadata {
+    title: string;
+    channel?: string;
+    uploader?: string;
+    duration?: number;
+    duration_string?: string;
+    description?: string;
+    like_count?: number;
+    comment_count?: number;
+    view_count?: number;
+    thumbnail?: string;
+    upload_date?: string;  // YYYYMMDD format from yt-dlp, or ISO for local
+    webpage_url?: string;
+    extractor?: string;  // e.g., 'youtube', 'instagram', 'local'
+}
+
 interface FolderNode {
     name: string;
     path: string;
@@ -378,11 +397,22 @@ Respond with a JSON object (no markdown code blocks):
 
 
 /**
- * Get video title from URL using yt-dlp (works for YouTube, Instagram, etc.)
+ * Sanitize a title string for use in file paths
  */
-async function getVideoTitle(url: string): Promise<string> {
+function sanitizeTitle(title: string): string {
+    return title
+        .replace(/[<>:"/\\|?*]/g, '-')
+        .replace(/\s+/g, '-')
+        .toLowerCase()
+        .slice(0, 100);
+}
+
+/**
+ * Get rich metadata from URL using yt-dlp --dump-json
+ */
+async function getUrlMetadata(url: string): Promise<SourceMetadata> {
     try {
-        const args = ['--get-title'];
+        const args = ['--dump-json', '--no-download'];
 
         // Add YouTube-specific options only for YouTube URLs
         if (isYouTubeUrl(url)) {
@@ -391,18 +421,122 @@ async function getVideoTitle(url: string): Promise<string> {
 
         args.push(url);
 
-        const { stdout } = await execFileAsync('yt-dlp', args);
-        // Sanitize title for use in file paths
-        return stdout
-            .trim()
-            .replace(/[<>:"/\\|?*]/g, '-')
-            .replace(/\s+/g, '-')
-            .toLowerCase()
-            .slice(0, 100); // Limit length
-    } catch (error) {
-        // Fallback to timestamp if title extraction fails
-        return `video-${Date.now()}`;
+        const { stdout } = await execFileAsync('yt-dlp', args, { maxBuffer: 10 * 1024 * 1024 });
+        const data = JSON.parse(stdout);
+
+        return {
+            title: data.title || data.fulltitle || `video-${Date.now()}`,
+            channel: data.channel || data.channel_name || undefined,
+            uploader: data.uploader || data.uploader_id || undefined,
+            duration: data.duration || undefined,
+            duration_string: data.duration_string || undefined,
+            description: data.description || undefined,
+            like_count: data.like_count || undefined,
+            comment_count: data.comment_count || undefined,
+            view_count: data.view_count || undefined,
+            thumbnail: data.thumbnail || (data.thumbnails && data.thumbnails.length > 0 ? data.thumbnails[data.thumbnails.length - 1]?.url : undefined),
+            upload_date: data.upload_date || undefined,
+            webpage_url: data.webpage_url || url,
+            extractor: data.extractor_key || data.extractor || 'unknown',
+        };
+    } catch (error: any) {
+        console.warn('⚠️  Failed to extract full metadata, falling back to basic info');
+        // Fallback: try just getting the title
+        try {
+            const args = ['--get-title'];
+            if (isYouTubeUrl(url)) {
+                args.push('--extractor-args', 'youtube:player_client=android,web');
+            }
+            args.push(url);
+            const { stdout } = await execFileAsync('yt-dlp', args);
+            return {
+                title: stdout.trim() || `video-${Date.now()}`,
+                webpage_url: url,
+                extractor: 'unknown',
+            };
+        } catch {
+            return {
+                title: `video-${Date.now()}`,
+                webpage_url: url,
+                extractor: 'unknown',
+            };
+        }
     }
+}
+
+/**
+ * Get duration of a media file using ffprobe
+ */
+async function getFileDuration(filePath: string): Promise<{ duration?: number; duration_string?: string }> {
+    try {
+        const { stdout } = await execFileAsync('ffprobe', [
+            '-v', 'quiet',
+            '-print_format', 'json',
+            '-show_format',
+            filePath,
+        ]);
+        const data = JSON.parse(stdout);
+        const duration = parseFloat(data.format?.duration);
+        if (!isNaN(duration)) {
+            const hours = Math.floor(duration / 3600);
+            const minutes = Math.floor((duration % 3600) / 60);
+            const seconds = Math.floor(duration % 60);
+            const duration_string = hours > 0
+                ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+                : `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            return { duration, duration_string };
+        }
+        return {};
+    } catch {
+        return {};
+    }
+}
+
+/**
+ * Get metadata from a local file
+ */
+async function getLocalFileMetadata(filePath: string): Promise<SourceMetadata> {
+    const basename = path.basename(filePath, path.extname(filePath));
+    const title = basename;
+
+    // Get file stats for modification date
+    let upload_date: string | undefined;
+    try {
+        const stats = await fs.stat(filePath);
+        // Format as YYYYMMDD to match yt-dlp format
+        upload_date = stats.mtime.toISOString().split('T')[0].replace(/-/g, '');
+    } catch {
+        // Ignore stat errors
+    }
+
+    // Get duration via ffprobe
+    const durationInfo = await getFileDuration(filePath);
+
+    return {
+        title,
+        duration: durationInfo.duration,
+        duration_string: durationInfo.duration_string,
+        upload_date,
+        webpage_url: `file://${path.resolve(filePath)}`,
+        extractor: 'local',
+        // These fields are not available for local files
+        channel: undefined,
+        uploader: undefined,
+        description: undefined,
+        like_count: undefined,
+        comment_count: undefined,
+        view_count: undefined,
+        thumbnail: undefined,
+    };
+}
+
+/**
+ * Get video title from URL using yt-dlp (works for YouTube, Instagram, etc.)
+ * @deprecated Use getUrlMetadata instead for richer metadata
+ */
+async function getVideoTitle(url: string): Promise<string> {
+    const metadata = await getUrlMetadata(url);
+    return sanitizeTitle(metadata.title);
 }
 
 async function downloadAudio(url: string, dest: string) {
@@ -495,6 +629,7 @@ async function main() {
     let audioPath: string;
     let title: string;
     let sourceUrl: string;
+    let sourceMetadata: SourceMetadata;
     let needsCleanup = false;
 
     // branch: URL vs local file
@@ -502,8 +637,15 @@ async function main() {
         sourceUrl = INPUT;
 
         console.time('📹  video metadata');
-        title = await getVideoTitle(INPUT);
+        sourceMetadata = await getUrlMetadata(INPUT);
+        title = sanitizeTitle(sourceMetadata.title);
         console.timeEnd('📹  video metadata');
+
+        // Log extracted metadata
+        console.log(`📊 Source: ${sourceMetadata.extractor}`);
+        if (sourceMetadata.channel) console.log(`   Channel: ${sourceMetadata.channel}`);
+        if (sourceMetadata.duration_string) console.log(`   Duration: ${sourceMetadata.duration_string}`);
+        if (sourceMetadata.view_count) console.log(`   Views: ${sourceMetadata.view_count.toLocaleString()}`);
 
         console.time('⬇️  youtube');
         await downloadAudio(INPUT, TMP_AUDIO);
@@ -529,8 +671,14 @@ async function main() {
         }
 
         sourceUrl = `file://${resolvedPath}`;
-        title = getTitleFromPath(resolvedPath);
+        
+        console.time('📹  file metadata');
+        sourceMetadata = await getLocalFileMetadata(resolvedPath);
+        title = sanitizeTitle(sourceMetadata.title);
+        console.timeEnd('📹  file metadata');
+
         console.log(`📁 Local file: ${resolvedPath}`);
+        if (sourceMetadata.duration_string) console.log(`   Duration: ${sourceMetadata.duration_string}`);
 
         // extract audio if video file
         if (isVideoFile(resolvedPath)) {
@@ -595,28 +743,46 @@ async function main() {
         summary: plan.reasoning,
     };
 
+    // Build complete metadata object with source info
+    const completeMetadata = {
+        // Source identification
+        sourceUrl,
+        title: sourceMetadata.title,  // Original title (not sanitized)
+        date: dateStr,
+        
+        // Rich source metadata from yt-dlp or local file
+        source: {
+            extractor: sourceMetadata.extractor,
+            channel: sourceMetadata.channel,
+            uploader: sourceMetadata.uploader,
+            duration: sourceMetadata.duration,
+            duration_string: sourceMetadata.duration_string,
+            description: sourceMetadata.description,
+            like_count: sourceMetadata.like_count,
+            comment_count: sourceMetadata.comment_count,
+            view_count: sourceMetadata.view_count,
+            thumbnail: sourceMetadata.thumbnail,
+            upload_date: sourceMetadata.upload_date,
+            webpage_url: sourceMetadata.webpage_url,
+        },
+        
+        // Theme classification
+        theme: themeInfo,
+        
+        // Transcription metadata
+        transcription: {
+            language: resp.language_code,
+            confidence: resp.language_probability,
+            wordsDetected: resp.words.length,
+        },
+    };
+
     // save files
     await Promise.all([
         fs.writeFile(txtOut, resp.text, 'utf8'),
         fs.writeFile(jsonOut, JSON.stringify(resp, null, 2), 'utf8'),
         fs.writeFile(parsedTxtOut, structuredTranscript, 'utf8'),
-        fs.writeFile(
-            metadataOut,
-            JSON.stringify(
-                {
-                    sourceUrl,
-                    title,
-                    date: dateStr,
-                    theme: themeInfo,
-                    language: resp.language_code,
-                    confidence: resp.language_probability,
-                    wordsDetected: resp.words.length,
-                },
-                null,
-                2
-            ),
-            'utf8'
-        ),
+        fs.writeFile(metadataOut, JSON.stringify(completeMetadata, null, 2), 'utf8'),
     ]);
 
     console.log(`\n✅ Saved files to:\n  ${outputDir}\n`);
