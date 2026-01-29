@@ -1,9 +1,11 @@
 # transcribee 🐝
 
-**Open source macOS YouTube video transcriber that evolves a self-organizing knowledge base.**
+**Open source macOS transcriber for YouTube, Instagram Reels, and local media — evolves a self-organizing knowledge base.**
 
 ```bash
 transcribee "https://youtube.com/watch?v=..."
+transcribee "https://instagram.com/reel/..."
+transcribee ~/Downloads/podcast.mp3
 ```
 
 Over time, your `~/Documents/transcripts/` folder naturally evolves into a personal library:
@@ -24,7 +26,7 @@ Each transcript is speaker-labeled and ready to paste into ChatGPT, Claude, or a
 
 ## Why 🍯
 
-I watch a lot of YouTube — podcasts, technical talks, interviews. I wanted to:
+I consume a lot of video content — YouTube, Instagram Reels, podcasts, interviews. I wanted to:
 - Ask questions about videos in LLMs
 - Have all that knowledge searchable and organized
 - Not do any manual work to maintain it
@@ -33,7 +35,7 @@ transcribee does exactly that. Transcribe once, knowledge stays forever.
 
 ## Features 🪻
 
-- **Transcribes** YouTube videos and local audio/video files
+- **Transcribes** YouTube, Instagram Reels, and local audio/video files
 - **Speaker diarization** — identifies different speakers
 - **Auto-categorizes** transcripts using Claude based on content
 - **Builds a knowledge library** that organizes itself over time
