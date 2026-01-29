@@ -1,108 +1,95 @@
 # transcribee 🐝
 
-Extract high-quality transcripts from YouTube videos and local media files to use as context for LLM conversations. Built for macOS.
+Turn YouTube videos and podcasts into a self-organizing knowledge base you can chat with.
+
+```bash
+transcribee "https://youtube.com/watch?v=..."
+```
+
+Over time, your `~/Documents/transcripts/` folder naturally evolves into a personal library:
+
+```
+transcripts/
+├── AI-Research/
+│   ├── ilya-sutskever-agi-2024/
+│   └── anthropic-constitutional-ai/
+├── Startups/
+│   ├── ycombinator-how-to-get-users/
+│   └── pmarca-founder-mode/
+└── Health/
+    └── huberman-sleep-optimization/
+```
+
+Each transcript is speaker-labeled and ready to paste into ChatGPT, Claude, or any LLM.
 
 ## Why 🍯
 
-LLMs can analyze, summarize, and answer questions about video content - but they need text input. This tool bridges that gap by converting audio/video into clean, speaker-labeled transcripts ready to paste into ChatGPT, Claude, or any other LLM.
+I watch a lot of YouTube — podcasts, technical talks, interviews. I wanted to:
+- Ask questions about videos in LLMs
+- Have all that knowledge searchable and organized
+- Not do any manual work to maintain it
 
-**Use cases:**
-- 🐝 Chat with podcast episodes, interviews, lectures
-- 🐝 Summarize long videos without watching them
-- 🐝 Search and reference specific parts of video content
-- 🐝 Build a personal knowledge base from video content
+transcribee does exactly that. Transcribe once, knowledge stays forever.
 
 ## Features 🪻
 
-- Transcribes YouTube videos and local audio/video files
-- Speaker diarization (identifies different speakers)
-- Auto-categorizes transcripts into a knowledge library using Claude
-- Outputs raw text, formatted transcript with speaker labels, and metadata
+- **Transcribes** YouTube videos and local audio/video files
+- **Speaker diarization** — identifies different speakers
+- **Auto-categorizes** transcripts using Claude based on content
+- **Builds a knowledge library** that organizes itself over time
 
-## Requirements
-
-- Node.js 18+
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) for YouTube downloads
-- [ffmpeg](https://ffmpeg.org/) for local video files
-- ElevenLabs API key (speech-to-text)
-- Anthropic API key (categorization)
+## Quick Start 🪺
 
 ```bash
-# macOS
+# Install dependencies (macOS)
 brew install yt-dlp ffmpeg
-```
-
-## Setup 🪺
-
-```bash
 pnpm install
+
+# Configure API keys
 cp .env.example .env
-# Add your API keys to .env
+# Add your ElevenLabs + Anthropic API keys to .env
+
+# Transcribe anything
+transcribee "https://youtube.com/watch?v=..."
+transcribee ~/Downloads/podcast.mp3
+transcribee ~/Videos/interview.mp4
 ```
 
-### Shell alias (optional)
+### Shell alias (recommended)
 
-Add to `~/.zshrc` for quick access:
+Add to `~/.zshrc`:
 
 ```bash
 alias transcribee="noglob /path/to/transcribee/transcribe.sh"
 ```
 
-## Usage 🌸
-
-```bash
-# YouTube video
-transcribee "https://www.youtube.com/watch?v=..."
-
-# Local video file
-transcribee ~/Videos/interview.mp4
-
-# Local audio file
-transcribee ~/Downloads/podcast.mp3
-
-# Without alias
-pnpm exec tsx index.ts "https://www.youtube.com/watch?v=..."
-```
-
-## Auto-organization 📂
-
-Transcripts are automatically organized into `~/Documents/transcripts/` using Claude:
-
-- Analyzes transcript content to determine topic/theme
-- Scans existing library folders
-- Reuses categories when content is semantically similar
-- Creates new categories when needed
-- Uses flat structure with kebab-case names (e.g., `ai-podcasts`, `tech-interviews`)
-
-Example library structure:
-```
-~/Documents/transcripts/
-├── ai-podcasts/
-│   ├── lex-fridman-sam-altman-2024-01-15/
-│   └── dwarkesh-patel-ilya-sutskever-2024-02-20/
-├── tech-interviews/
-│   └── pieter-levels-on-startups-2024-03-10/
-└── business-talks/
-    └── yc-startup-school-2024-04-05/
-```
-
 ## Output 🍯
 
-Each transcript folder contains:
+Each transcript saves to `~/Documents/transcripts/{category}/{title}/`:
 
-| File | Description |
-|------|-------------|
-| `transcription.txt` | Formatted with speaker labels - **paste this into your LLM** |
-| `transcription-raw.txt` | Raw text without speaker labels |
-| `transcription-raw.json` | Full API response with word-level timings |
-| `metadata.json` | Video info, detected language, theme classification |
+| File | What it's for |
+|------|---------------|
+| `transcription.txt` | Speaker-labeled transcript — **paste this into your LLM** |
+| `transcription-raw.txt` | Plain text without speaker labels |
+| `transcription-raw.json` | Word-level timings for precise references |
+| `metadata.json` | Video info, language, auto-detected theme |
 
 ## How it works 🐝
 
 1. Downloads audio from YouTube (yt-dlp) or extracts from local video (ffmpeg)
-2. Transcribes via ElevenLabs `scribe_v1_experimental` with speaker diarization
-3. Claude analyzes content and existing library to pick/create category
-4. Saves transcript files with metadata
+2. Transcribes with ElevenLabs (`scribe_v1_experimental` with speaker diarization)
+3. Claude analyzes content and existing library structure
+4. Auto-categorizes into the right folder
+5. Saves transcript files with metadata
+
+## Requirements
+
+- macOS (tested on Sonoma)
+- Node.js 18+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — `brew install yt-dlp`
+- [ffmpeg](https://ffmpeg.org/) — `brew install ffmpeg`
+- [ElevenLabs API key](https://elevenlabs.io/) — for transcription
+- [Anthropic API key](https://anthropic.com/) — for auto-categorization
 
 ## Supported formats
 
@@ -110,6 +97,7 @@ Each transcript folder contains:
 |------|---------|
 | Audio | mp3, m4a, wav, ogg, flac |
 | Video | mp4, mkv, webm, mov, avi |
+| URLs | youtube.com, youtu.be |
 
 ---
 
