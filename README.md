@@ -38,6 +38,24 @@ transcribee does exactly that. Transcribe once, knowledge stays forever.
 - **Auto-categorizes** transcripts using Claude based on content
 - **Builds a knowledge library** that organizes itself over time
 
+## Use with Clawdbot 🤖
+
+transcribee is available as a [Clawdbot](https://github.com/clawdbot/clawdbot) skill. Just ask your agent to transcribe any YouTube video:
+
+> "Transcribe this video: https://youtube.com/watch?v=..."
+
+### Install the skill
+
+```bash
+# Clone into your Clawdbot skills folder
+git clone https://github.com/itsfabioroma/transcribee.git ~/.clawdbot/skills/transcribee
+
+# Or add to an existing workspace
+git clone https://github.com/itsfabioroma/transcribee.git ~/clawd/skills/transcribee
+```
+
+Make sure you have the dependencies installed (`brew install yt-dlp ffmpeg`) and API keys configured.
+
 ## Quick Start 🪺
 
 ```bash
