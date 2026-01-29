@@ -52,7 +52,7 @@ alias transcribee="noglob /path/to/transcribee/transcribe.sh"
 
 ```bash
 # YouTube video
-transcribee "https://www.youtube.com/watch?v=..."
+transcribee https://www.youtube.com/watch?v=...
 
 # Local video file
 transcribee ~/Videos/interview.mp4
@@ -60,7 +60,7 @@ transcribee ~/Videos/interview.mp4
 # Local audio file
 transcribee ~/Downloads/podcast.mp3
 
-# Without alias
+# Without alias (quotes needed)
 pnpm exec tsx index.ts "https://www.youtube.com/watch?v=..."
 ```
 
