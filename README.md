@@ -47,11 +47,11 @@ transcribee is available as a [Clawdbot](https://github.com/clawdbot/clawdbot) s
 ### Install the skill
 
 ```bash
-# Clone into your Clawdbot skills folder
-git clone https://github.com/itsfabioroma/transcribee.git ~/.clawdbot/skills/transcribee
+# Install from ClawdHub (recommended)
+clawdhub install transcribee
 
-# Or add to an existing workspace
-git clone https://github.com/itsfabioroma/transcribee.git ~/clawd/skills/transcribee
+# Or clone manually
+git clone https://github.com/itsfabioroma/transcribee.git ~/.clawdbot/skills/transcribee
 ```
 
 Make sure you have the dependencies installed (`brew install yt-dlp ffmpeg`) and API keys configured.
